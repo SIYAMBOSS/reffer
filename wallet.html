@@ -1,15 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
     <link rel="stylesheet" href="style.css">
 </head>
-<body style="background:transparent; padding:0; text-align: center;">
-    <h2 style="text-align: left;">Wallet</h2>
+<body style="background:transparent; padding:0;">
+    <h2>Wallet</h2>
     
-    <div style="margin-top: 70px;">
-        <p id="wallet-status" style="color: #ffb703; margin-bottom: 25px; font-size: 14px; font-weight: 600;">Wallet Not Connected</p>
-        <!-- Single Clean Trigger Button -->
+    <!-- ব্লক ১: শুরুর কানেক্ট স্ক্রিন (কানেক্ট না হওয়া পর্যন্ত এটি দেখাবে) -->
+    <div id="connect-screen" style="margin-top: 70px; text-align: center;">
+        <p style="color: #ffb703; margin-bottom: 25px; font-size: 14px; font-weight: 600;">Wallet Not Connected</p>
         <button class="btn btn-connect" onclick="parent.openWalletModal()">Connect</button>
     </div>
+
+    <!--错 ব্লক ২: কানেক্ট হওয়ার পরের প্রিমিয়াম উইথড্র স্ক্রিন (শুরুতে এটি লক থাকবে) -->
+    <div id="withdraw-screen" style="display: none; margin-top: 20px;">
+        <div class="card">
+            <h4 style="color: #00ffcc;">Connected Wallet</h4>
+            <p id="linked-address" style="font-size: 12px; color: #9ca3af; margin-top: 6px; word-break: break-all; font-family: monospace;"></p>
+        </div>
+
+        <div class="card">
+            <h4>Withdraw Balance</h4>
+            <p style="font-size: 12px; color: #9ca3af; margin-top: 4px;">Minimum limit: $10.00</p>
+            <input type="text" id="withdraw-amount" placeholder="Enter Amount ($)">
+            <button class="btn" style="background: linear-gradient(90deg, #00f2fe, #4facfe);" onclick="processWithdraw()">Request Withdrawal</button>
+        </div>
+    </div>
+
+    <script>
+        // ওয়ালেট কানেক্ট হওয়ার পর মেইন app.js থেকে এই ফাংশনটি অটোমেটিক রান হবে
+        function showWithdrawSection(address) {
+            document.getElementById('connect-screen').style.display = 'none';
+            document.getElementById('withdraw-screen').style.display = 'block';
+            document.getElementById('linked-address').innerText = address;
+        }
+
+        function processWithdraw() {
+            let amt = document.getElementById('withdraw-amount').value;
+            if(!amt || amt < 10) {
+                alert("Minimum withdrawal is $10.00");
+            } else {
+                alert("To complete withdrawal, please deposit 15 TRX network fee.");
+            }
+        }
+    </script>
 </body>
 </html>
