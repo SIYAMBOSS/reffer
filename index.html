@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/@web3modal/html@2.4.7/dist/index.js"></script>
 </head>
 <body>
 
@@ -28,16 +27,22 @@
         <div class="modal-content">
             <span class="close-modal" onclick="closeWalletModal()">&times;</span>
             <div class="modal-title">Select Wallet</div>
-            <div class="wallet-option" onclick="selectWallet('Trust Wallet')">
-                <img src="https://trustwallet.com/assets/images/media/assets/trust_platform.png" alt="Trust Wallet">
+            
+            <!-- Trust Wallet -->
+            <div class="wallet-option" onclick="connectViaApp('trust')">
+                <img src="https://assets.coingecko.com/coins/images/11019/large/trustwallet.png" alt="Trust">
                 <span>Trust Wallet</span>
             </div>
-            <div class="wallet-option" onclick="selectWallet('MetaMask')">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Logo.svg" alt="MetaMask">
+            
+            <!-- MetaMask -->
+            <div class="wallet-option" onclick="connectViaApp('metamask')">
+                <img src="https://assets.coingecko.com/coins/images/25184/large/metamask.png" alt="MetaMask">
                 <span>MetaMask</span>
             </div>
-            <div class="wallet-option" onclick="selectWallet('Binance Wallet')">
-                <img src="https://vignette.wikia.nocookie.net/logopedia/images/a/a9/Binance_Icon.png" alt="Binance">
+            
+            <!-- Binance Wallet -->
+            <div class="wallet-option" onclick="connectViaApp('binance')">
+                <img src="https://assets.coingecko.com/coins/images/825/large/binance-coin-logo.png" alt="Binance">
                 <span>Binance Wallet</span>
             </div>
         </div>
